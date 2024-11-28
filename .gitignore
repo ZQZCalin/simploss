@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# pytest cache
+.pytest_cache/
+
+# Environment directories
+.env
+.venv/
+venv/
+env/
+
+# VS Code settings
+.vscode/
+
+# hydra outputs
+outputs/
+
+# wandb log files
+wandb/
