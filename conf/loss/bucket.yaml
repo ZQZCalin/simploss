@@ -1,0 +1,10 @@
+name: bucket
+x0: "1/(i+1)**.5"
+defaults:
+  - rotation
+  - _self_
+
+# >>> x0
+# float:  x0 is a scalar equal to the float
+# str:    expression that maps each coordinate i (0-index) to x0[i]. 
+#         use i and d to denote coordinate and dimension respectively.

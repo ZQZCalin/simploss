@@ -1,0 +1,8 @@
+name: valley
+x0: null
+L: null
+defaults:
+  - rotation
+  - _self_
+
+# Since L and rotation can be array, it's hard to config it 

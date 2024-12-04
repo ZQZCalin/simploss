@@ -1,0 +1,4 @@
+name: sgd
+defaults:
+  - schedule: constant
+  - _self_

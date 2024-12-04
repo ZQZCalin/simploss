@@ -1,0 +1,15 @@
+defaults:
+  - loss: bucket
+  - optimizer: adam
+  - _self_
+
+logging:
+  wandb_project: simploss
+  wandb_name: null
+
+train:
+  dim: 50
+  steps: 20000
+  
+random:
+  rotation: 42
