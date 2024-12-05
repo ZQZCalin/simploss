@@ -1,0 +1,5 @@
+name: full_matrix_adagrad
+defaults:
+  - schedule: constant
+  - _self_
+eps: 1e-8

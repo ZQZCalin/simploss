@@ -177,11 +177,73 @@ def sgdm(
     return GradientTransformation(init_fn, update_fn)
 
 
+class ScaleByFullMatrixAdagradState(NamedTuple):
+    covariance: chex.ArrayTree
 
 
+def scale_by_full_matrix_adagrad(
+    eps: float = 1e-8,
+) -> optax.GradientTransformation:
+    """Full-matrix AdaGrad pre-learning rate."""
+    def init_fn(params):
+        covariance = jtu.tree_map(
+            jnp.zeros_like,
+            tree_util.outer(params, params),
+        )
+        return ScaleByFullMatrixAdagradState(
+            covariance = covariance,
+        )
+
+    def update_fn(updates, state, params=None):
+        del params
+        def matrix_inv_sqrt(M):
+            D, U = jnp.linalg.eigh(M)
+            D_inv = jnp.diag(1.0 / (jnp.sqrt(D) + eps))
+            return U @ D_inv @ U.T
+
+        covariance = state.covariance
+        covariance = tree_util.add(
+            covariance, tree_util.outer(updates, updates))
+        
+        preconditioner = jtu.tree_map(matrix_inv_sqrt, covariance)
+        updates = jtu.tree_map(
+            lambda P, g: P @ g, preconditioner, updates
+        )
+        updates = tree_util.normalize(updates)
+
+        state = ScaleByFullMatrixAdagradState(
+            covariance = covariance,
+        )
+
+        return updates, state
+    
+    return GradientTransformation(init_fn, update_fn)
 
 
+def full_matrix_adagrad(
+    learning_rate: ScalarOrSchedule,
+    eps: float = 1e-8,
+) -> GradientTransformation:
+    """Full-matrix AdaGrad.
+    
+    https://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf
 
+    Matrix pre-conditioner is applied to each tree leaf,
+    where the covariance matrix is computed via the outer product
+    of the flattened gradient array.
+    """
+    return optax.chain(
+        scale_by_full_matrix_adagrad(eps),
+        optax.scale_by_learning_rate(learning_rate),
+    )
+
+
+def ggt() -> GradientTransformation:
+    """GGT, an efficient implementation of full-matrix AdaGrad.
+    
+    https://arxiv.org/pdf/1806.02958
+    """
+    return GradientTransformation
 
 
 
@@ -198,6 +260,14 @@ def init_optimizer(config: DictConfig) -> optax.GradientTransformation:
             use_momentum=config.use_momentum,
             use_preconditioning=config.use_preconditioning,
         )
+    
+    def init_full_matrix_adagrad(config):
+        return full_matrix_adagrad(
+            learning_rate=config.schedule.lr,
+            eps=config.eps,
+        )
 
     if config.optimizer.name == "adam":
         return init_adam(config.optimizer)
+    if config.optimizer.name == "full_matrix_adagrad":
+        return init_full_matrix_adagrad(config.optimizer)
