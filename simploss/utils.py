@@ -6,7 +6,34 @@ from jax import random as jr
 from jax import tree_util as jtu
 from jax import Array
 from optax import GradientTransformation
+import chex
 from typing import Tuple
+
+
+PyTree = chex.ArrayTree
+
+
+def matrix_inv_sqrt(M: chex.Array) -> chex.Array:
+    """Compute M^{-1/2}.
+    
+    Args:
+        M: jnp.2darray, symmetric square matrix.
+
+    Returns:
+        M^{-1/2}
+    """
+    D, U = jnp.linalg.eigh(M)
+    D_inv = jnp.diag(1.0 / jnp.sqrt(D))
+    return U @ D_inv @ U.T
+
+
+# if __name__ == "__main__":
+
+#     M = jnp.array([[4,0], [0,4]])
+#     print(matrix_inv_sqrt(M))
+
+#     raise KeyboardInterrupt
+
 
 
 # Other util functions.

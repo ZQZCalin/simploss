@@ -82,9 +82,14 @@ def inner(tree1: PyTree, tree2: PyTree) -> Scalar:
     )
 
 
-def cosine(tree1: PyTree, tree2: PyTree) -> PyTree:
+def cosine(tree1: PyTree, tree2: PyTree) -> Scalar:
     """Cosine similarity of two PyTrees."""
     return inner(normalize(tree1), normalize(tree2))
+
+
+def outer(tree1: PyTree, tree2: PyTree) -> PyTree:
+    """Broadcast jax.numpy.outer to two PyTrees."""
+    return jtu.tree_map(lambda x, y: jnp.outer(x, y), tree1, tree2)
 
 
 
