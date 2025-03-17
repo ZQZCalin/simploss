@@ -68,7 +68,7 @@ def normalize(tree: PyTree, p: float=2) -> PyTree:
     n = norm(tree, p)
     return jax.lax.cond(
         n == 0,
-        true_fun=lambda _: tree,
+        true_fun=lambda _: jnp.array(tree, dtype=jnp.float32),
         false_fun=lambda _: jtu.tree_map(lambda x: x/n, tree),
         operand=None,
     )
@@ -90,6 +90,12 @@ def cosine(tree1: PyTree, tree2: PyTree) -> Scalar:
 def outer(tree1: PyTree, tree2: PyTree) -> PyTree:
     """Broadcast jax.numpy.outer to two PyTrees."""
     return jtu.tree_map(lambda x, y: jnp.outer(x, y), tree1, tree2)
+
+
+def ravel(tree: PyTree) -> chex.Array:
+    """Broadcast jax.numpy.ravel to a PyTree."""
+    leaves, _ = jtu.tree_flatten(tree)
+    return jnp.concatenate([jnp.ravel(leaf) for leaf in leaves])
 
 
 

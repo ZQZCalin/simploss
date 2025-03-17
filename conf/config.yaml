@@ -8,8 +8,8 @@ logging:
   wandb_name: null
 
 train:
-  dim: 50
-  steps: 20000
+  dim: 100
+  steps: 2000000
   
 random:
   rotation: 42

@@ -26,10 +26,16 @@ class LossGradFn(Protocol):
         """The `grad` function."""
 
 
+class LossMinimaFn(Protocol):
+    def __call__(self, params: optax.Params) -> optax.Params:
+        """The `minima` function."""
+
+
 class LossFn(NamedTuple):
     """Loss function implemented by value and gradient function."""
-    val:  LossValFn
-    grad:   LossGradFn
+    val: LossValFn
+    grad: LossGradFn
+    minima: LossMinimaFn
     
 
 
@@ -62,8 +68,11 @@ def valley_loss(
             return L * (jnp.sum(jnp.abs(x[1:] - x[:-1])) + jnp.abs(x[0] - x0))
         else:
             return jnp.sum(L[1:] * jnp.abs(x[1:] - x[:-1])) + L[0] * jnp.abs(x[0] - x0)
+        
+    def minima_fn(params: chex.Array):
+        return jtu.tree_map(lambda p: x0 * p, params)
     
-    return LossFn(val_fn, jax.grad(val_fn))
+    return LossFn(val_fn, jax.grad(val_fn), minima_fn)
 
 
 def bucket_loss(
@@ -91,7 +100,11 @@ def bucket_loss(
         
         return jnp.max(jnp.abs(x - x0))
     
-    return LossFn(val_fn, jax.grad(val_fn))
+    def minima_fn(params: chex.Array):
+        del params
+        return x0
+    
+    return LossFn(val_fn, jax.grad(val_fn), minima_fn)
 
 
 
@@ -113,10 +126,14 @@ def init_loss(config: DictConfig) -> LossFn:
     def init_valley_loss(config):
         if isinstance(config.L, float):
             L = config.L
+        # TODO: add expression for Lipschiz values
         elif config.L == "":
             pass
         else:
             raise ValueError(f"invalid config: valley_loss.L cannot be '{config.L}'")
+        
+        if not isinstance(config.x0, float):
+            raise ValueError(f"invalid config: valley_loss.x0 must be float")
         
         rotation = init_rotation(config.rotation)
         return valley_loss(config.x0, L, rotation)

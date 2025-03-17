@@ -182,7 +182,7 @@ class ScaleByFullMatrixAdagradState(NamedTuple):
 
 
 def scale_by_full_matrix_adagrad(
-    eps: float = 1e-8,
+    eps: float = 1e-6,
 ) -> optax.GradientTransformation:
     """Full-matrix AdaGrad pre-learning rate."""
     def init_fn(params):
@@ -197,15 +197,21 @@ def scale_by_full_matrix_adagrad(
     def update_fn(updates, state, params=None):
         del params
         def matrix_inv_sqrt(M):
-            D, U = jnp.linalg.eigh(M)
-            D_inv = jnp.diag(1.0 / (jnp.sqrt(D) + eps))
-            return U @ D_inv @ U.T
+            # change to SVD
+            # D, U = jnp.linalg.eigh(M)
+            # D_inv = jnp.diag(1.0 / (jnp.sqrt(D) + eps))
+            # return U @ D_inv @ U.T
+            u, s, vt = jnp.linalg.svd(M)
+            s_inv = jnp.diag(1.0 / (jnp.sqrt(s) + eps))
+            return u @ s_inv @ vt
 
         covariance = state.covariance
         covariance = tree_util.add(
             covariance, tree_util.outer(updates, updates))
+        # print("covariance\n", covariance)
         
         preconditioner = jtu.tree_map(matrix_inv_sqrt, covariance)
+        # print("pre-conditioner\n", preconditioner)
         updates = jtu.tree_map(
             lambda P, g: P @ g, preconditioner, updates
         )

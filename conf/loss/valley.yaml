@@ -1,6 +1,6 @@
 name: valley
-x0: null
-L: null
+x0: 1.0
+L: 1.0
 defaults:
   - rotation
   - _self_
